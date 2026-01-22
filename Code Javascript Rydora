@@ -1,0 +1,280 @@
+let web3;
+let contract;
+
+const CONTRACT_ADDRESS = "0xd2903d5483342b7a33a7d342f7601e2bf498a65e";
+
+const ABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_rideId",
+				"type": "uint256"
+			}
+		],
+		"name": "acceptRide",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_rideId",
+				"type": "uint256"
+			}
+		],
+		"name": "cancelRide",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_rideId",
+				"type": "uint256"
+			}
+		],
+		"name": "completeRide",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_rideId",
+				"type": "uint256"
+			}
+		],
+		"name": "confirmArrival",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_rideId",
+				"type": "uint256"
+			}
+		],
+		"name": "fundRide",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_fare",
+				"type": "uint256"
+			}
+		],
+		"name": "registerDriver",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_pickup",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_destination",
+				"type": "string"
+			}
+		],
+		"name": "requestRide",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "drivers",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "fare",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isRegistered",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "rideCounter",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "rides",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "rider",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "driver",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "pickup",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "destination",
+				"type": "string"
+			},
+			{
+				"internalType": "enum RideX.RideStatus",
+				"name": "status",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("Install MetaMask");
+    return;
+  }
+
+  web3 = new Web3(window.ethereum);
+  await ethereum.request({ method: "eth_requestAccounts" });
+
+  const accounts = await web3.eth.getAccounts();
+  document.getElementById("account").innerText = accounts[0];
+
+  contract = new web3.eth.Contract(ABI, CONTRACT_ADDRESS);
+}
+
+
+async function registerDriver() {
+  const name = driverName.value;
+  const fareEth = driverFare.value;
+
+  const accounts = await web3.eth.getAccounts();
+
+  await contract.methods
+    .registerDriver(name, web3.utils.toWei(fareEth, "ether"))
+    .send({ from: accounts[0] });
+
+  alert("Driver registered");
+}
+
+async function acceptRide() {
+  const accounts = await web3.eth.getAccounts();
+
+  await contract.methods
+    .acceptRide(rideIdDriver.value)
+    .send({ from: accounts[0] });
+
+  alert("Ride accepted");
+}
+
+async function completeRide() {
+  const accounts = await web3.eth.getAccounts();
+
+  await contract.methods
+    .completeRide(rideIdDriver.value)
+    .send({ from: accounts[0] });
+
+  alert("Ride completed by driver");
+}
+
+async function requestRide() {
+  const accounts = await web3.eth.getAccounts();
+
+  await contract.methods
+    .requestRide(pickup.value, destination.value)
+    .send({ from: accounts[0] });
+
+  alert("Ride requested");
+}
+
+async function fundRide() {
+  const accounts = await web3.eth.getAccounts();
+
+  const ride = await contract.methods
+    .rides(rideIdRider.value)
+    .call();
+
+  await contract.methods
+    .fundRide(rideIdRider.value)
+    .send({
+      from: accounts[0],
+      value: ride.price
+    });
+
+  alert("Ride funded");
+}
+
+async function confirmArrival() {
+  const accounts = await web3.eth.getAccounts();
+
+  await contract.methods
+    .confirmArrival(rideIdRider.value)
+    .send({ from: accounts[0] });
+
+  alert("Ride finalized");
+}
