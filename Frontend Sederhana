@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rydora</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+  <script defer src="app.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px }
+    section { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px }
+    input, button { display: block; margin: 8px 0; padding: 6px }
+  </style>
+</head>
+<body>
+
+<h2>Rydora – Blockchain Ride Sharing</h2>
+
+<button onclick="connectWallet()">Connect Wallet</button>
+<p>Account: <span id="account">-</span></p>
+
+<hr>
+
+<section>
+  <h3>🚗 Driver</h3>
+
+  <input id="driverName" placeholder="Driver Name">
+  <input id="driverFare" placeholder="Fare (ETH)">
+  <button onclick="registerDriver()">Register Driver</button>
+
+  <input id="rideIdDriver" placeholder="Ride ID">
+  <button onclick="acceptRide()">Accept Ride</button>
+  <button onclick="completeRide()">Complete Ride</button>
+</section>
+
+<section>
+  <h3>🧍 Rider</h3>
+
+  <input id="pickup" placeholder="Pickup Location">
+  <input id="destination" placeholder="Destination">
+  <button onclick="requestRide()">Request Ride</button>
+
+  <input id="rideIdRider" placeholder="Ride ID">
+  <button onclick="fundRide()">Fund Ride</button>
+  <button onclick="confirmArrival()">Confirm Arrival</button>
+</section>
+
+</body>
+</html>
