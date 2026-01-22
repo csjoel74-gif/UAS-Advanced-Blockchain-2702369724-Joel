@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+contract Rydora is ReentrancyGuard {
+
+    enum RideStatus {
+        Requested,
+        Accepted,
+        Funded,
+        CompletedByDriver,
+        Finalized,
+        Cancelled
+    }
+
+    struct Driver {
+        string name;
+        uint256 fare;
+        bool isRegistered;
+    }
+
+    struct Ride {
+        address rider;
+        address driver;
+        uint256 price;
+        string pickup;
+        string destination;
+        RideStatus status;
+    }
+
+    mapping(address => Driver) public drivers;
+    mapping(uint256 => Ride) public rides;
+    uint256 public rideCounter;
+
+
+
+    function registerDriver(string memory _name, uint256 _fare) external {
+        require(!drivers[msg.sender].isRegistered, "Already registered");
+        drivers[msg.sender] = Driver(_name, _fare, true);
+    }
+
+
+    function requestRide(
+        string memory _pickup,
+        string memory _destination
+    ) external {
+        rideCounter++;
+        rides[rideCounter] = Ride(
+            msg.sender,
+            address(0),
+            0,
+            _pickup,
+            _destination,
+            RideStatus.Requested
+        );
+    }
+
+    function fundRide(uint256 _rideId) external payable {
+        Ride storage r = rides[_rideId];
+        require(msg.sender == r.rider, "Not rider");
+        require(r.status == RideStatus.Accepted, "Ride not accepted");
+        require(msg.value == r.price, "Incorrect amount");
+
+        r.status = RideStatus.Funded;
+    }
+
+function confirmArrival(uint256 _rideId) external nonReentrant {
+    Ride storage r = rides[_rideId];
+    require(msg.sender == r.rider, "Not rider");
+    require(r.status == RideStatus.CompletedByDriver, "Not completed");
+
+    uint256 amount = r.price;
+    r.price = 0; // Reset to prevent reentrancy
+    (bool success, ) = r.driver.call{value: amount}("");
+    require(success, "Transfer failed");
+
+    r.status = RideStatus.Finalized;
+}
+
+    function acceptRide(uint256 _rideId) external {
+        Ride storage r = rides[_rideId];
+        require(drivers[msg.sender].isRegistered, "Not driver");
+        require(r.status == RideStatus.Requested, "Invalid status");
+
+        r.driver = msg.sender;
+        r.price = drivers[msg.sender].fare;
+        r.status = RideStatus.Accepted;
+    }
+
+    function completeRide(uint256 _rideId) external {
+        Ride storage r = rides[_rideId];
+        require(msg.sender == r.driver, "Not driver");
+        require(r.status == RideStatus.Funded, "Ride not funded");
+
+        r.status = RideStatus.CompletedByDriver;
+    }
+
+
+ function cancelRide(uint256 _rideId) external nonReentrant {
+        Ride storage r = rides[_rideId];
+        require(
+            msg.sender == r.rider || msg.sender == r.driver,
+            "Not authorized"
+        );
+        require(r.status != RideStatus.Finalized, "Already finalized");
+
+        if (r.status == RideStatus.Funded) {
+            uint256 amount = r.price;
+            r.price = 0; // Prevent reentrancy by resetting state first
+            (bool success, ) = r.rider.call{value: amount}("");
+            require(success, "Refund failed");
+        }
+        r.status = RideStatus.Cancelled;
+    }
+}
